@@ -104,6 +104,8 @@ class MC_RT(commands.Bot):
         async def status(ctx):
             server_info = self.get_info()
 
+            self.update_presence()
+
             str_etat = f"Le serveur {server_info['server']['name']} est " + (
                 "en ligne." if server_info["online"] else "hors ligne.") + " Il y a actuellement " + str(server_info["players"]["now"]) + " joueur(s) sur le serveur."
 
@@ -115,6 +117,8 @@ class MC_RT(commands.Bot):
         @self.command()
         async def players(ctx):
             server_info = self.get_info()
+            self.update_presence()
+            
             message = f"{str(server_info['players']['now'])} joueur(s) en ligne :"
             for player in server_info["players"]["sample"]:
                 self.skin_head(player["name"], player["id"])
@@ -136,8 +140,6 @@ class MC_RT(commands.Bot):
                     img = Image.open("skin_heads/unknown.png")
                     collage.paste(img, (i * size_head, 0))
 
-            collage.save("collage.png")
-
             embed = discord.Embed(
                 title="Etat du serveur Minecraft", color=0x55FF55)
             embed.set_author(name="MC_RT", url='https://github.com/darklouiskil/MC_RT',
@@ -146,7 +148,7 @@ class MC_RT(commands.Bot):
             informations = "Etat du serveur : " + ("**En ligne**" if server_info['online'] else "**Hors ligne**") + "\n" + \
                 "Nombre de joueurs : **" + str(server_info['players']['now']) + "/" + str(server_info['players']['max']) + "**\n" + \
                 "Version du serveur : " + server_info['server']['name'] + "\n" + \
-                "Adresse du serveur : " + self.server_name 
+                "Adresse du serveur : " + self.server_name
 
             embed.add_field(name="Informations : ",
                             value=informations, inline=False)
@@ -156,16 +158,19 @@ class MC_RT(commands.Bot):
             for player in server_info["players"]["sample"]:
                 players += player["name"] + "\n"
 
+            if not players : 
+                players = "Pas de joueurs en ligne."
             embed.add_field(name="Joueurs en ligne : ",
                             value=players, inline=False)
 
-            file = discord.File("collage.png", filename="collage.png")
-            embed.set_image(url="attachment://collage.png")
+            image_embed = "wallpaper.jpg"
+            file = discord.File(image_embed, filename=image_embed)
+            embed.set_image(url="attachment://"+image_embed)
             embed.set_footer(
                 text="Si vous remarquez une erreur contacter un admin !")
 
             if self.message_players:
-                self.message_players.set_image(url="attachment://collage.png")
+                self.message_players.set_image(url="attachment://"+image_embed)
                 await self.message_players.edit(embed=embed)
             else:
                 self.message_players = await ctx.send(embed=embed, file=file)
