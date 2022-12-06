@@ -30,6 +30,8 @@ class MC_RT(commands.Bot):
 
     channel_etat_id = 1049637913530466315
 
+    path_to_whitelist = "/craftbukit/whitelist.json"
+
     server_name = "cybertim.fr"
 
     def get_info(self):
@@ -179,7 +181,7 @@ class MC_RT(commands.Bot):
 
             json_to_add = {"uuid": uuid, "name": username}
 
-            with open("whitelist.json", "r") as f:
+            with open(self.path_to_whitelist, "r") as f:
                 whitelist = json.load(f)
 
                 if json_to_add in whitelist:
@@ -187,7 +189,7 @@ class MC_RT(commands.Bot):
 
                 whitelist.append(json_to_add)
 
-            with open("whitelist.json", "w") as f:
+            with open(self.path_to_whitelist, "w") as f:
                 json.dump(whitelist, f)
 
             print(
