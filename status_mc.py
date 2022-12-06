@@ -27,7 +27,8 @@ from PIL import Image
 
 class MC_RT(commands.Bot):
     message_players = ""
-    message_players_img = ""
+
+    channel_etat_id = 1049637913530466315
 
     server_name = "cybertim.fr"
 
@@ -152,16 +153,17 @@ class MC_RT(commands.Bot):
 
         @self.command()
         async def players(ctx):
-            embed, file = self.generate_embed()
-
-            if self.message_players:
-                await self.message_players.edit(embed=embed)
+            if ctx.message.channel.id == self.channel_etat_id:
                 embed, file = self.generate_embed()
 
-            if self.message_players:
-                await self.message_players.edit(embed=embed)
-            else:
-                self.message_players = await ctx.send(embed=embed, file=file)
+                if self.message_players:
+                    await self.message_players.edit(embed=embed)
+                    embed, file = self.generate_embed()
+
+                if self.message_players:
+                    await self.message_players.edit(embed=embed)
+                else:
+                    self.message_players = await ctx.send(embed=embed, file=file)
 
         @self.command()
         async def whitelist(ctx, username):
