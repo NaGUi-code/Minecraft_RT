@@ -152,7 +152,9 @@ class MC_RT(commands.Bot):
 
             channel = self.get_channel(1049637913530466315)
 
-            self.message_players = await channel.fetch_message(1049722332031225856)
+            print(channel)
+
+            self.message_players = channel.fetch_message(1049722332031225856)
             print(self.message_players)
             print(self.message_players)
             print(self.message_players)
