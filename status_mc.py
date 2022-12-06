@@ -6,8 +6,9 @@ import time
 import base64
 import datetime
 import discord
+import datetime
 import os
-from discord.ext import commands
+from discord.ext import tasks, commands
 
 from PIL import Image
 
@@ -26,7 +27,7 @@ from PIL import Image
 
 class MC_RT(commands.Bot):
     message_players = ""
-    message_etat = ""
+    message_players_img = ""
 
     server_name = "cybertim.fr"
 
@@ -70,107 +71,94 @@ class MC_RT(commands.Bot):
 
         return "r.content"
 
-    def update_presence(self):
+    def generate_embed(self):
         server_info = self.get_info()
 
-        if not server_info["online"]:
-            presence = discord.Activity(name="SERVEUR HORS LIGNE",
-                                        type=discord.ActivityType.playing)
-            asyncio.run_coroutine_threadsafe(
-                self.change_presence(activity=presence), self.loop)
-            return
+        embed = discord.Embed(
+            title="Etat du serveur Minecraft", color=0x55FF55)
+        embed.set_author(name="MC_RT", url='https://github.com/darklouiskil/MC_RT',
+                         icon_url='https://cdn.icon-icons.com/icons2/2699/PNG/512/minecraft_logo_icon_168974.png')
 
-        players = server_info["players"]["now"]
-        max_players = server_info["players"]["max"]
+        etat_serv = "**En ligne**" if server_info['online'] else "**Hors ligne**"
+        nb_joueur = (str(server_info['players']['now']) if server_info['players']
+                     ['now'] else "0") + "/" + str(server_info['players']['max'])
+        version_serv = server_info['server']['name']
 
-        presence = discord.Activity(name=f"{players}/{max_players} joueurs",
-                                    type=discord.ActivityType.playing)
-        asyncio.run_coroutine_threadsafe(
-            self.change_presence(activity=presence), self.loop)
+        informations = f"Etat du serveur : {etat_serv}\n" + \
+            f"Nombre de joueurs : {nb_joueur}\n" + \
+            f"Version du serveur : {version_serv}\n" +\
+            f"Adresse du serveur : {self.server_name}\n"
+
+        embed.add_field(name="Informations : ",
+                        value=informations, inline=False)
+
+        players = ""
+        if not players:
+            players = "Pas de joueurs en ligne."
+        else:
+            for player in server_info["players"]["sample"]:
+                players += player["name"] + "\n"
+
+        embed.add_field(name="\nJoueurs en ligne : ",
+                        value=players, inline=False)
+        embed.set_footer(
+            text="Mise à jour le " + datetime.datetime.now().strftime("%d/%m/%Y à %H:%M:%S"))
+
+        image_embed = "wallpaper.jpg"
+        file = discord.File(image_embed, filename=image_embed)
+        embed.set_image(url="attachment://"+image_embed)
+
+        return embed, file
 
     def __init__(self, command_prefix, self_bot=False, channel_number=None):
         commands.Bot.__init__(self, command_prefix=command_prefix, self_bot=self_bot,
                               intents=discord.Intents.all())
 
+        async def presence_loop():
+            while True:
+
+                server_info = self.get_info()
+
+                if not server_info["online"]:
+                    presence = discord.Activity(name="SERVEUR HORS LIGNE",
+                                                type=discord.ActivityType.playing)
+                    asyncio.run_coroutine_threadsafe(
+                        self.change_presence(activity=presence), self.loop)
+                    await asyncio.sleep(10)
+                    return
+
+                players = server_info["players"]["now"]
+                max_players = server_info["players"]["max"]
+
+                presence = discord.Activity(name=f"{players}/{max_players} joueurs",
+                                            type=discord.ActivityType.playing)
+                asyncio.run_coroutine_threadsafe(
+                    self.change_presence(activity=presence), self.loop)
+
+                embed, file = self.generate_embed()
+
+                if self.message_players:
+                    await self.message_players.edit(embed=embed)
+
+                await asyncio.sleep(10)
+
         @self.event
         async def on_ready():
+            self.loop.create_task(presence_loop())
+
             print("Bot Online!")
             print("Name: {}".format(self.user.name))
             print("ID: {}".format(self.user.id))
 
-            self.update_presence()
-
-        @self.command()
-        async def status(ctx):
-            server_info = self.get_info()
-
-            self.update_presence()
-
-            str_etat = f"Le serveur {server_info['server']['name']} est " + (
-                "en ligne." if server_info["online"] else "hors ligne.") + " Il y a actuellement " + str(server_info["players"]["now"]) + " joueur(s) sur le serveur."
-
-            if self.message_etat:
-                await self.message_etat.edit(content=str_etat)
-            else:
-                self.message_etat = await ctx.send(str_etat)
-
         @self.command()
         async def players(ctx):
-            server_info = self.get_info()
-            self.update_presence()
-            
-            message = f"{str(server_info['players']['now'])} joueur(s) en ligne :"
-            for player in server_info["players"]["sample"]:
-                self.skin_head(player["name"], player["id"])
-                message += "\n-" + player["name"]
-
-            size_head = 100
-            players_num = server_info['players']['now']
-            collage = Image.new(
-                'RGB', ((players_num * size_head), size_head))
-            for i, player in enumerate(server_info["players"]["sample"]):
-
-                if os.path.exists(f"skin_heads/{player['name']}.png"):
-
-                    img = Image.open(f"skin_heads/{player['name']}.png")
-                    if img.size != (size_head, size_head):
-                        img = img.resize((size_head, size_head))
-                    collage.paste(img, (i * size_head, 0))
-                else:
-                    img = Image.open("skin_heads/unknown.png")
-                    collage.paste(img, (i * size_head, 0))
-
-            embed = discord.Embed(
-                title="Etat du serveur Minecraft", color=0x55FF55)
-            embed.set_author(name="MC_RT", url='https://github.com/darklouiskil/MC_RT',
-                             icon_url='https://cdn.icon-icons.com/icons2/2699/PNG/512/minecraft_logo_icon_168974.png')
-
-            informations = "Etat du serveur : " + ("**En ligne**" if server_info['online'] else "**Hors ligne**") + "\n" + \
-                "Nombre de joueurs : **" + str(server_info['players']['now']) + "/" + str(server_info['players']['max']) + "**\n" + \
-                "Version du serveur : " + server_info['server']['name'] + "\n" + \
-                "Adresse du serveur : " + self.server_name
-
-            embed.add_field(name="Informations : ",
-                            value=informations, inline=False)
-
-            # gather all the players in a string
-            players = ""
-            for player in server_info["players"]["sample"]:
-                players += player["name"] + "\n"
-
-            if not players : 
-                players = "Pas de joueurs en ligne."
-            embed.add_field(name="Joueurs en ligne : ",
-                            value=players, inline=False)
-
-            image_embed = "wallpaper.jpg"
-            file = discord.File(image_embed, filename=image_embed)
-            embed.set_image(url="attachment://"+image_embed)
-            embed.set_footer(
-                text="Si vous remarquez une erreur contacter un admin !")
+            embed, file = self.generate_embed()
 
             if self.message_players:
-                self.message_players.set_image(url="attachment://"+image_embed)
+                await self.message_players.edit(embed=embed)
+                embed, file = self.generate_embed()
+
+            if self.message_players:
                 await self.message_players.edit(embed=embed)
             else:
                 self.message_players = await ctx.send(embed=embed, file=file)
