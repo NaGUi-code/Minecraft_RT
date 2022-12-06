@@ -94,7 +94,7 @@ class MC_RT(commands.Bot):
                         value=informations, inline=False)
 
         players = server_info["players"]["sample"]
-        
+
         if not players:
             players = "Pas de joueurs en ligne."
         else:
@@ -146,13 +146,15 @@ class MC_RT(commands.Bot):
 
         @self.event
         async def on_ready():
-            self.loop.create_task(presence_loop())
-
             print("Bot Online!")
             print("Name: {}".format(self.user.name))
             print("ID: {}".format(self.user.id))
 
-            self.message_players = await ctx.fetch_message(1049722332031225856)
+            channel = self.get_channel(1049637913530466315)
+
+            self.message_players = await channel.fetch_message(1049722332031225856)
+
+            self.loop.create_task(presence_loop())
 
         @self.command()
         async def players(ctx):
