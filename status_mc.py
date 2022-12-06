@@ -10,8 +10,6 @@ import datetime
 import os
 from discord.ext import tasks, commands
 
-from PIL import Image
-
 # """
 # {'status': 'success',
 # 'online': True,
@@ -95,7 +93,8 @@ class MC_RT(commands.Bot):
         embed.add_field(name="Informations : ",
                         value=informations, inline=False)
 
-        players = ""
+        players = server_info["players"]["sample"]
+        
         if not players:
             players = "Pas de joueurs en ligne."
         else:
@@ -152,6 +151,8 @@ class MC_RT(commands.Bot):
             print("Bot Online!")
             print("Name: {}".format(self.user.name))
             print("ID: {}".format(self.user.id))
+
+            self.message_players = await ctx.fetch_message(1049722332031225856)
 
         @self.command()
         async def players(ctx):
